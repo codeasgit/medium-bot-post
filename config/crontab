@@ -1,0 +1,2 @@
+# Generate one reviewable DevOps/infra/MLOps draft daily at 8:00 AM local time.
+0 8 * * * /bin/bash /home/madhuchilipi/dev/medium-devops-bot/scripts/run-daily.sh >> /home/madhuchilipi/dev/medium-devops-bot/data/cron.log 2>&1

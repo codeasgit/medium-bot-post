@@ -1,0 +1,15 @@
+# Add one article topic per line. The bot uses the first topic not already in history.
+# Blank lines and lines beginning with # are ignored.
+
+Designing CI pipelines that fail safely and recover cleanly
+Kubernetes requests and limits without capacity guesswork
+Terraform module boundaries for growing infrastructure teams
+Practical OpenTelemetry rollout for existing services
+Reducing Docker image size without sacrificing debuggability
+GitOps drift detection and safe reconciliation strategies
+Building actionable SLOs for internal platforms
+Secrets management patterns for CI/CD pipelines
+Designing reliable feature pipelines for production ML
+Model monitoring beyond accuracy and data drift
+Safe Kubernetes cluster upgrades with measurable rollback criteria
+FinOps guardrails engineers will actually use
