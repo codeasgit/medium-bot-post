@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from .config import Config
@@ -62,12 +63,23 @@ class ArticleGenerator:
             method="POST",
             headers=headers,
         )
-        try:
-            with urlopen(request, timeout=180) as response:
-                return json.loads(response.read().decode("utf-8"))
-        except HTTPError as error:
-            detail = error.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"{provider} API returned HTTP {error.code}: {detail}") from error
+        transient_codes = {429, 500, 502, 503, 504}
+        for attempt in range(3):
+            try:
+                with urlopen(request, timeout=180) as response:
+                    return json.loads(response.read().decode("utf-8"))
+            except HTTPError as error:
+                detail = error.read().decode("utf-8", errors="replace")
+                if error.code in transient_codes and attempt < 2:
+                    time.sleep(2 ** (attempt + 1))
+                    continue
+                raise RuntimeError(f"{provider} API returned HTTP {error.code}: {detail}") from error
+            except URLError as error:
+                if attempt < 2:
+                    time.sleep(2 ** (attempt + 1))
+                    continue
+                raise RuntimeError(f"{provider} API connection failed: {error.reason}") from error
+        raise RuntimeError(f"{provider} API request failed after retries")
 
     def _create_openai_response(self, prompt: str) -> dict[str, Any]:
         schema = self._article_schema()
