@@ -80,8 +80,9 @@ crontab -e
 ```
 
 The scheduled command checks `BOT_TIMEZONE` and `BOT_DAILY_HOUR`, so it remains correct when the
-host uses another timezone. The generator is idempotent: a second run on the same date returns
-the existing draft. `--force` is intentionally required to replace it.
+host uses another timezone. Transient API failures are retried, and later hourly runs catch up a
+missing draft after the configured hour. The generator is idempotent: a second run on the same
+date returns the existing draft. `--force` is intentionally required to replace it.
 
 ## Test
 

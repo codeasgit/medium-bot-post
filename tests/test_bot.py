@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from io import BytesIO
 from datetime import date
 from pathlib import Path
+from unittest.mock import patch
+from urllib.error import HTTPError
 
 from medium_bot.config import Config
 from medium_bot.generator import ArticleGenerator
@@ -34,6 +37,20 @@ class FakeGenerator:
 class FakeMedium:
     def publish(self, draft, status: str) -> PublishResult:
         return PublishResult("https://medium.example/post", "abc", status)
+
+
+class FakeResponse:
+    def __init__(self, body: bytes):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
+
+    def read(self) -> bytes:
+        return self.body
 
 
 class ResolvingMedium:
@@ -164,6 +181,23 @@ class BotTests(unittest.TestCase):
         self.assertEqual(
             ArticleGenerator._gemini_output_text(payload), '{"title":"gemini example"}'
         )
+
+    def test_transient_api_failure_is_retried(self) -> None:
+        unavailable = HTTPError(
+            "https://example.test",
+            503,
+            "Unavailable",
+            {},
+            BytesIO(b'{"error":"busy"}'),
+        )
+        response = FakeResponse(b'{"ok":true}')
+        with patch("medium_bot.generator.urlopen", side_effect=[unavailable, response]) as call:
+            with patch("medium_bot.generator.time.sleep"):
+                result = ArticleGenerator._json_request(
+                    "https://example.test", {"Content-Type": "application/json"}, {}, "Test"
+                )
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(call.call_count, 2)
 
     def test_resolves_publication_slug_to_medium_id(self) -> None:
         config = Config(

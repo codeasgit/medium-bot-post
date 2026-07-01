@@ -47,9 +47,15 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "scheduled":
             now = datetime.now(ZoneInfo(config.timezone))
-            if now.hour != config.daily_hour:
+            existing = service.history.for_date(now.date().isoformat())
+            if existing:
+                existing_path = Path(str(existing.get("path", "")))
+                if existing_path.exists():
+                    print(existing_path)
+                    return 0
+            if now.hour < config.daily_hour:
                 print(
-                    f"Not generation hour in {config.timezone}: "
+                    f"Waiting for generation hour in {config.timezone}: "
                     f"current={now.hour:02d}, configured={config.daily_hour:02d}"
                 )
                 return 0
